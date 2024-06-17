@@ -24,9 +24,8 @@ class InvoiceService {
       // Handle error
     }
   }
-
-  Future<void> makePayment(String invoiceNumber) async {
-    final response = await apiService.makePayment(invoiceNumber, '254704709515');
+  Future<void> makePayment(String invoiceNumber, String phoneNumber) async {
+    final response = await apiService.makePayment(invoiceNumber, phoneNumber);
     if (response.statusCode == 200) {
       // Payment made successfully
     } else {

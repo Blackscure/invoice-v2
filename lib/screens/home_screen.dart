@@ -30,13 +30,17 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchInvoices();
   }
 
-  void makePayment(String invoiceNumber) async {
-    await invoiceService.makePayment(invoiceNumber);
+  void makePayment(String invoiceNumber, String phoneNumber) async {
+    await invoiceService.makePayment(invoiceNumber, phoneNumber);
     fetchInvoices();
   }
 
   void showCreateInvoiceFormDialog() {
     showCreateInvoiceForm(context, createInvoice);  // Call the helper function
+  }
+
+  void showPaymentDialogForInvoice(String invoiceNumber) {
+    showPaymentDialog(context, invoiceNumber, makePayment);  // Call the helper function
   }
 
   @override
@@ -58,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
               subtitle: Text('Amount: \Kes${invoice.amount} - Status: ${invoice.status}'),
               trailing: IconButton(
                 icon: Icon(Icons.payment),
-                onPressed: () => makePayment(invoice.invoiceNumber),
+                onPressed: () => showPaymentDialogForInvoice(invoice.invoiceNumber),  // Show payment dialog
               ),
             ),
           );
