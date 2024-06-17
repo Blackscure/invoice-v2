@@ -1,11 +1,9 @@
-// lib/home_screen.dart
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
 import '../models/invoice_model.dart';
 import '../services/api_service.dart';
-
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -49,36 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void showCreateInvoiceForm() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) {
-        final _invoiceNumberController = TextEditingController();
-        final _amountController = TextEditingController();
-
         return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _invoiceNumberController,
-                decoration: InputDecoration(labelText: 'Invoice Number'),
-              ),
-              TextField(
-                controller: _amountController,
-                decoration: InputDecoration(labelText: 'Amount'),
-                keyboardType: TextInputType.number,
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  final invoiceNumber = _invoiceNumberController.text;
-                  final amount = double.tryParse(_amountController.text) ?? 0.0;
-                  createInvoice(invoiceNumber, amount);
-                  Navigator.pop(context);
-                },
-                child: Text('Create Invoice'),
-              ),
-            ],
-          ),
+          padding: MediaQuery.of(context).viewInsets, // Adjusts for the keyboard
+          child: CreateInvoiceForm(onSubmit: (invoiceNumber, amount) {
+            createInvoice(invoiceNumber, amount);
+            Navigator.pop(context);
+          }),
         );
       },
     );
@@ -108,6 +84,86 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: showCreateInvoiceForm,
         child: Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class CreateInvoiceForm extends StatefulWidget {
+  final Function(String, double) onSubmit;
+
+  CreateInvoiceForm({required this.onSubmit});
+
+  @override
+  _CreateInvoiceFormState createState() => _CreateInvoiceFormState();
+}
+
+class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
+  final TextEditingController _invoiceNumberController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+
+  @override
+  void dispose() {
+    _invoiceNumberController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _invoiceNumberController,
+            decoration: InputDecoration(
+              labelText: 'Invoice Number',
+              border: OutlineInputBorder(),
+            ),
+            style: TextStyle(color: Colors.black),
+          ),
+          SizedBox(height: 10),
+          TextField(
+            controller: _amountController,
+            decoration: InputDecoration(
+              labelText: 'Amount',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: Colors.black),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              final invoiceNumber = _invoiceNumberController.text;
+              final amount = double.tryParse(_amountController.text) ?? 0.0;
+              widget.onSubmit(invoiceNumber, amount);
+            },
+            child: Text('Create Invoice'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(),
+        ),
+      ),
+      home: HomeScreen(),
     );
   }
 }
