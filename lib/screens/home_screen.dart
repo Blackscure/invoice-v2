@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-
 import '../models/invoice_model.dart';
-import '../services/api_service.dart';
+import '../services/invoice_service.dart';
+import '../utils/dialog_helpers.dart';  // Import the dialog helpers
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -11,7 +9,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ApiService apiService = ApiService();
+  final InvoiceService invoiceService = InvoiceService();
   List<Invoice> invoices = [];
 
   @override
@@ -21,43 +19,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void fetchInvoices() async {
-    final response = await apiService.retrieveInvoices();
-    if (response.statusCode == 200) {
-      final invoicesResponse = InvoicesResponse.fromJson(jsonDecode(response.body));
-      setState(() {
-        invoices = invoicesResponse.invoices;
-      });
-    }
+    final fetchedInvoices = await invoiceService.fetchInvoices();
+    setState(() {
+      invoices = fetchedInvoices;
+    });
   }
 
   void createInvoice(String invoiceNumber, double amount) async {
-    final response = await apiService.createInvoice(invoiceNumber, amount);
-    if (response.statusCode == 201) {
-      fetchInvoices();
-    }
+    await invoiceService.createInvoice(invoiceNumber, amount);
+    fetchInvoices();
   }
 
-  void makePayment(String invoiceNumber) async {
-    final response = await apiService.makePayment(invoiceNumber, '254704709515');
-    if (response.statusCode == 200) {
-      fetchInvoices();
-    }
+  void makePayment(String invoiceNumber, String phoneNumber) async {
+    await invoiceService.makePayment(invoiceNumber, phoneNumber);
+    fetchInvoices();
   }
 
-  void showCreateInvoiceForm() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: MediaQuery.of(context).viewInsets, // Adjusts for the keyboard
-          child: CreateInvoiceForm(onSubmit: (invoiceNumber, amount) {
-            createInvoice(invoiceNumber, amount);
-            Navigator.pop(context);
-          }),
-        );
-      },
-    );
+  void showCreateInvoiceFormDialog() {
+    showCreateInvoiceForm(context, createInvoice);  // Call the helper function
+  }
+
+  void showPaymentDialogForInvoice(String invoiceNumber) {
+    showPaymentDialog(context, invoiceNumber, makePayment);  // Call the helper function
   }
 
   @override
@@ -70,18 +53,23 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: invoices.length,
         itemBuilder: (context, index) {
           final invoice = invoices[index];
-          return ListTile(
-            title: Text(invoice.invoiceNumber),
-            subtitle: Text('Amount: \Kes${invoice.amount} - Status: ${invoice.status}'),
-            trailing: IconButton(
-              icon: Icon(Icons.payment),
-              onPressed: () => makePayment(invoice.invoiceNumber),
+          return Card(
+            elevation: 4, // Adjust the elevation for the shadow
+            shadowColor: Colors.black, // Set shadow color to black
+            margin: EdgeInsets.all(8), // Add margin for spacing between cards
+            child: ListTile(
+              title: Text(invoice.invoiceNumber),
+              subtitle: Text('Amount: \Kes${invoice.amount} - Status: ${invoice.status}'),
+              trailing: IconButton(
+                icon: Icon(Icons.payment),
+                onPressed: () => showPaymentDialogForInvoice(invoice.invoiceNumber),  // Show payment dialog
+              ),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showCreateInvoiceForm,
+        onPressed: showCreateInvoiceFormDialog,  // Call the renamed method
         child: Icon(Icons.add),
       ),
     );
@@ -107,7 +95,6 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
     _amountController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -139,6 +126,19 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
               final invoiceNumber = _invoiceNumberController.text;
               final amount = double.tryParse(_amountController.text) ?? 0.0;
               widget.onSubmit(invoiceNumber, amount);
+              Navigator.pop(context); // Close the modal after submission
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Colors.green, // Background color
+                  content: Text(
+                    'Invoice created successfully',
+                    style: TextStyle(color: Colors.white), // Text color
+                  ),
+                  duration: Duration(seconds: 2), // Adjust the duration as needed
+                ),
+              );
             },
             child: Text('Create Invoice'),
           ),
@@ -146,8 +146,10 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
       ),
     );
   }
-}
 
+
+
+}
 
 void main() {
   runApp(MyApp());
