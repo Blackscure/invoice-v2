@@ -95,7 +95,6 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
     _amountController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -128,6 +127,18 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
               final amount = double.tryParse(_amountController.text) ?? 0.0;
               widget.onSubmit(invoiceNumber, amount);
               Navigator.pop(context); // Close the modal after submission
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Colors.green, // Background color
+                  content: Text(
+                    'Invoice created successfully',
+                    style: TextStyle(color: Colors.white), // Text color
+                  ),
+                  duration: Duration(seconds: 2), // Adjust the duration as needed
+                ),
+              );
             },
             child: Text('Create Invoice'),
           ),
@@ -135,6 +146,9 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
       ),
     );
   }
+
+
+
 }
 
 void main() {
