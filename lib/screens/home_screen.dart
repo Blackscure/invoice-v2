@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import '../models/invoice_model.dart';
 import '../services/invoice_service.dart';
-import '../utils/dialog_helpers.dart';  // Import the dialog helpers
+import '../utils/dialog_helpers.dart';
+import 'TransactionsScreen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final InvoiceService invoiceService = InvoiceService();
   List<Invoice> invoices = [];
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     fetchInvoices();
   }
 
@@ -36,40 +40,58 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void showCreateInvoiceFormDialog() {
-    showCreateInvoiceForm(context, createInvoice);  // Call the helper function
+    showCreateInvoiceForm(context, createInvoice);
   }
 
   void showPaymentDialogForInvoice(String invoiceNumber) {
-    showPaymentDialog(context, invoiceNumber, makePayment);  // Call the helper function
+    showPaymentDialog(context, invoiceNumber, makePayment);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Invoices'),
+        title: Text('Home'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: 'Invoices'),
+            Tab(text: 'Transactions'),
+          ],
+        ),
       ),
-      body: ListView.builder(
-        itemCount: invoices.length,
-        itemBuilder: (context, index) {
-          final invoice = invoices[index];
-          return Card(
-            elevation: 4, // Adjust the elevation for the shadow
-            shadowColor: Colors.black, // Set shadow color to black
-            margin: EdgeInsets.all(8), // Add margin for spacing between cards
-            child: ListTile(
-              title: Text(invoice.invoiceNumber),
-              subtitle: Text('Amount: \Kes${invoice.amount} - Status: ${invoice.status}'),
-              trailing: IconButton(
-                icon: Icon(Icons.payment),
-                onPressed: () => showPaymentDialogForInvoice(invoice.invoiceNumber),  // Show payment dialog
-              ),
-            ),
-          );
-        },
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          ListView.builder(
+            itemCount: invoices.length,
+            itemBuilder: (context, index) {
+              final invoice = invoices[index];
+              return Card(
+                elevation: 4,
+                margin: EdgeInsets.all(8),
+                child: ListTile(
+                  title: Text(invoice.invoiceNumber),
+                  subtitle: Text('Amount: \Kes${invoice.amount} - Status: ${invoice.status}'),
+                  trailing: IconButton(
+                    icon: Icon(Icons.payment),
+                    onPressed: () => showPaymentDialogForInvoice(invoice.invoiceNumber),
+                  ),
+                ),
+              );
+            },
+          ),
+          TransactionsScreen(),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showCreateInvoiceFormDialog,  // Call the renamed method
+        onPressed: showCreateInvoiceFormDialog,
         child: Icon(Icons.add),
       ),
     );
@@ -95,6 +117,7 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
     _amountController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -146,9 +169,6 @@ class _CreateInvoiceFormState extends State<CreateInvoiceForm> {
       ),
     );
   }
-
-
-
 }
 
 void main() {
